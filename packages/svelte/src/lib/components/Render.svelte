@@ -23,24 +23,12 @@
   export let component: InertiaComponentType
   export let props: PageProps = {}
   export let children: RenderProps[] = []
-
-  let prev = component
-  let key = new Date().getTime()
-
-  function updateKey(component: InertiaComponentType) {
-    if (prev !== component) {
-      prev = component
-      key = new Date().getTime()
-    }
-  }
-
-  $: updateKey(component)
 </script>
 
 {#if $store.component}
-  {#key key}
+  {#key children?.length === 0 ? $store.key : null}
     <svelte:component this={component} {...props}>
-      {#each children as child, index (component && component.length === index ? $store.key : null)}
+      {#each children as child}
         <svelte:self {...child} />
       {/each}
     </svelte:component>
