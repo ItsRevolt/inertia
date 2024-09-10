@@ -1,10 +1,11 @@
-import { router, setupProgress, type InertiaAppResponse, type Page } from '@inertiajs/core'
-import type { ComponentType } from 'svelte'
+import { router, setupProgress, type InertiaAppResponse, type Page, type PageProps } from '@inertiajs/core'
+import type { ComponentType, SvelteComponent } from 'svelte'
 import App from './components/App.svelte'
 import SSR, { type SSRProps } from './components/SSR.svelte'
 import store from './store'
 import type { ComponentResolver, ResolvedComponent } from './types'
 
+interface InertiaAppComponentType extends ComponentType<App>, SvelteComponent {}
 type SvelteRenderResult = { html: string; head: string; css: { code: string } }
 type SSRComponent = ComponentType<SSR> & { render: (props: SSRProps) => SvelteRenderResult }
 
@@ -15,10 +16,11 @@ interface CreateInertiaAppProps {
     el: Element
     App: ComponentType<App>
     props: {
-      initialPage: Page
-      resolveComponent: ComponentResolver
+      component: ResolvedComponent
+      page: Page<PageProps>
+      key: string | null
     }
-  }) => void | App
+  }) => InertiaAppComponentType
   progress?:
     | false
     | {
@@ -41,10 +43,14 @@ export default async function createInertiaApp({
   const el = isServer ? null : document.getElementById(id)
   const initialPage: Page = page || JSON.parse(el?.dataset?.page || '{}')
   const resolveComponent = (name: string) => Promise.resolve(resolve(name))
+  let appComponent: InertiaAppComponentType
+  let initialComponent: ResolvedComponent
+  let key: number | null = null
 
-  await resolveComponent(initialPage.component).then((initialComponent) => {
+  await resolveComponent(initialPage.component).then((component: ResolvedComponent) => {
+    initialComponent = component
     store.set({
-      component: initialComponent,
+      component: initialComponent as ResolvedComponent,
       page: initialPage,
     })
   })
@@ -65,12 +71,20 @@ export default async function createInertiaApp({
   router.init({
     initialPage,
     resolveComponent,
-    swapComponent: async ({ component, page, preserveState }) => {
-      store.update((current) => ({
-        component: component as ResolvedComponent,
-        page,
-        key: preserveState ? current.key : Date.now(),
-      }))
+    swapComponent: async (props) => {
+      const oldOrNewKey = props.preserveState ? key : Date.now()
+
+      if (appComponent) {
+        key = oldOrNewKey
+        appComponent.$set({ ...props, key })
+      }
+
+      // Keep for now for backwards compatibility
+      store.set({
+        component: props.component as ResolvedComponent,
+        page: props.page,
+        key: oldOrNewKey,
+      })
     },
   })
 
@@ -78,12 +92,13 @@ export default async function createInertiaApp({
     setupProgress(progress)
   }
 
-  setup({
+  appComponent = setup({
     el,
     App,
     props: {
-      initialPage,
-      resolveComponent,
+      component: initialComponent,
+      page: initialPage,
+      key,
     },
   })
 }

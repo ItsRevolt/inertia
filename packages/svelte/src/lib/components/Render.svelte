@@ -2,15 +2,17 @@
   import type { PageProps } from '@inertiajs/core'
   import type { ComponentType } from 'svelte'
 
-  type RenderProps = {
+  export type RenderProps = {
     component: ComponentType
     props?: PageProps
     children?: RenderProps[]
+    key?: string | null
   } | null
 
-  export const h = (component: ComponentType, props?: PageProps, children?: RenderProps[]): RenderProps => {
+  export const h = (component: ComponentType, props?: PageProps, children?: RenderProps[], key: string | null = null): RenderProps => {
     return {
       component,
+      key,
       ...(props ? { props } : {}),
       ...(children ? { children } : {}),
     }
@@ -18,24 +20,19 @@
 </script>
 
 <script lang="ts">
-  import store from '../store'
-
   export let component: ComponentType
   export let props: PageProps = {}
   export let children: RenderProps[] = []
-
-  let prevComponent: ComponentType
-  let key: number
-  $: if (prevComponent !== component) {
-    key = Date.now()
-    prevComponent = component
-  }
+  export let key: string | null = null
 </script>
 
-{#if $store.component}
-  {#key key}
+{#if component}
+  <!-- Add the `key` only to the last (page) component in the tree.
+       This ensures that the page component re-renders when `preserveState` is disabled,
+       while the layout components are persisted across page changes. -->
+  {#key children?.length === 0 ? key : null}
     <svelte:component this={component} {...props}>
-      {#each children as child, index (component && component.length === index ? $store.key : null)}
+      {#each children as child}
         <svelte:self {...child} />
       {/each}
     </svelte:component>
