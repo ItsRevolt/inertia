@@ -1,3 +1,4 @@
+import { cloneDeep } from './objectUtils'
 import { page as currentPage } from './page'
 import { SessionStorage } from './sessionStorage'
 import { Page } from './types'
@@ -28,10 +29,10 @@ export class History {
   public static pushState(page: Page): void {
     if (!History.preserveUrl) {
       window.history.pushState(
-        {
+        cloneDeep({
           page,
           timestamp: Date.now(),
-        },
+        }),
         '',
         page.url,
       )
@@ -43,10 +44,10 @@ export class History {
 
     if (!History.preserveUrl) {
       window.history.replaceState(
-        {
+        cloneDeep({
           page,
           timestamp: Date.now(),
-        },
+        }),
         '',
         page.url,
       )
