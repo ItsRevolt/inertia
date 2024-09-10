@@ -52,7 +52,7 @@ const remember: ComponentOptions = {
             rememberable.reduce(
               (data, key) => ({
                 ...data,
-                [key]: cloneDeep(hasCallbacks(key) ? this[key].__remember() : this[key]),
+                [key]: hasCallbacks(key) ? this[key].__remember() : this[key],
               }),
               {},
             ),
