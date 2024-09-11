@@ -49,10 +49,7 @@ export default async function createInertiaApp({
 
   await resolveComponent(initialPage.component).then((component: ResolvedComponent) => {
     initialComponent = component
-    store.set({
-      component: initialComponent as ResolvedComponent,
-      page: initialPage,
-    })
+    store.set(initialPage)
   })
 
   if (isServer) {
@@ -79,12 +76,7 @@ export default async function createInertiaApp({
         appComponent.$set({ ...props, key })
       }
 
-      // Keep for now for backwards compatibility
-      store.set({
-        component: props.component as ResolvedComponent,
-        page: props.page,
-        key: oldOrNewKey,
-      })
+      store.set(props.page)
     },
   })
 
